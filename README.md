@@ -1,36 +1,140 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# حِرفة · Hirfa
 
-## Getting Started
+A marketplace for women's home-based businesses in the Negev — built from the
+Hirfa Product Requirements Document and project deck.
 
-First, run the development server:
+The platform brings scattered WhatsApp/Instagram selling into one organised
+market: buyers discover and order from local projects, sellers get a storefront,
+an order pipeline and simple finance tracking, and the Hirfa team gets an admin
+console for onboarding, moderation and reporting.
+
+**Interface language:** Arabic (RTL) by default, with Hebrew and English
+built in and switchable from the header.
+
+---
+
+## Stack
+
+| | |
+|---|---|
+| Framework | Next.js 16 (App Router) · React 19 |
+| Language | TypeScript (strict) |
+| Styling | Tailwind CSS v4 with a custom token layer |
+| State | Zustand + `persist` (localStorage) |
+| Icons | lucide-react |
+| Type | `IBM Plex Sans Arabic` via `next/font` |
+
+## Running it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000
+npm run build   # production build
+npx eslint .    # lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Demo accounts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Pick one from the buttons on `/login`, or sign in with the password `hirfa2026`:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Account | Email | Reaches |
+|---|---|---|
+| Buyer | `buyer@hirfa.app` | `/account` — orders, favourites, reviews |
+| Seller | `seller@hirfa.app` | `/seller` — store, orders, finances |
+| Admin | `admin@hirfa.app` | `/admin` — applications, stores, reports |
 
-## Learn More
+One account can hold several roles at once, as the PRD requires — the seller
+account is also a buyer.
 
-To learn more about Next.js, take a look at the following resources:
+## What is implemented
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Buyer** — browsing without an account, search with category/town/price/
+delivery filters and sorting, store pages with reviews and working hours,
+product pages with options and three pricing modes, a single-store cart,
+checkout, order tracking with a status timeline, favourites, reviews on
+completed orders only, issue reporting, profile with separable marketing
+consent, and account deletion.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Seller** — application form with a documented review pipeline, dashboard,
+order board (accept / reject with a required reason / advance status / record
+payment / internal notes), product and service management with availability and
+visibility toggles, store settings (identity, imagery, delivery methods,
+working hours, pause orders, shareable link), finances (recorded sales vs money
+actually collected, manual expenses, monthly filter, CSV export), community
+board, shared delivery network with consent-gated contact details, and business
+development guides and workshops.
 
-## Deploy on Vercel
+**Admin** — overview with reach and sales metrics shown separately, application
+queue with mandatory decision notes, store management (feature, verify, suspend
+with a reason), order register with CSV export, users and the roles matrix,
+reports queue for tickets and reported reviews, and an audit log.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Decisions worth knowing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+A few rules from the PRD are enforced in code rather than left to the UI:
+
+- **An order is a sale only when the seller confirms completion.** Nothing
+  advances to `completed` on its own, and a WhatsApp-originated order is marked
+  as a referral until the seller records the outcome.
+- **Recorded sales ≠ money collected.** Both figures are shown side by side,
+  and payment state is set per order by the seller.
+- **Registered buyers ≠ active buyers**, and a WhatsApp click is not a sale.
+  The admin dashboard shows these as separate metrics by design.
+- **One cart holds one store.** Mixing stores creates separate orders, because
+  preparation and delivery differ per seller.
+- **Store data is isolated.** A seller only ever reads her own store, orders,
+  customers and revenue.
+- **Prices are never invented.** A product priced on request renders as such,
+  with a quote button instead of an order button; an unrated store shows "no
+  rating yet" rather than an empty star row.
+- **Reviews require a completed order**, and admins can hide a review that
+  breaches the terms — not one that is merely negative.
+- **Every decision is documented.** Rejections, suspensions and application
+  outcomes all require a reason, written to the audit log.
+
+## Data layer
+
+This build has **no backend**. The whole domain lives in a typed Zustand store
+(`src/lib/store/`) seeded from `src/lib/data/seed.ts` and persisted to
+localStorage, so every flow is genuinely interactive and survives a reload, but
+data is per-device and never leaves the browser. "Reset demo data" in the footer
+restores the seed.
+
+The shapes in `src/lib/types.ts` mirror the entity table in the PRD (Users,
+Sellers, Stores, Products, Orders, OrderItems, Payments, Expenses, Reviews,
+Announcements, DeliveryOffers, SupportTickets, AuditLogs), so moving to a real
+database means implementing those tables and swapping the store's actions for
+server calls — the components do not change.
+
+Still to be built for production: real authentication, a database, file uploads
+for seller photos, notifications (email/WhatsApp), and a payment integration if
+the commission model from the deck is adopted.
+
+## Layout
+
+```
+src/
+  app/                 routes — public, /account, /seller, /admin
+  components/
+    ui/                buttons, fields, cards, modal, toasts, tabs
+    layout/            shell, header, footer, guards, logo
+    commerce/          product card, store card, status badges, timeline
+    seller/            console shell
+  lib/
+    types.ts           domain model
+    data/              seed content, towns, categories
+    store/             zustand store, selectors, hooks
+    i18n/              ar / he / en dictionary
+    format.ts          prices, dates, weekdays per locale
+public/img/            generated placeholder imagery
+```
+
+## Design
+
+Brand colours are taken from the project deck: plum `#7A3350`, terracotta
+`#C2784F`, gold `#E0A458`, over a warm sand paper. The interface is deliberately
+editorial — hairline rules, tight radii, numbered sections and a Negev diamond
+motif — rather than the soft-shadow card template the prototype used.
+
+Imagery in `public/img` is generated SVG, on-brand and obviously placeholder;
+it is there so layouts read correctly until real product photography exists.
