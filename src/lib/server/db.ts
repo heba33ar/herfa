@@ -195,9 +195,15 @@ export async function writeDb<T>(mutate: (db: Db) => T | Promise<T>): Promise<T>
   });
 }
 
-/** Test/diagnostics helper — reports which backend is actually in use. */
+/**
+ * Reports which backend is actually in use.
+ *
+ * This performs a real no-op write rather than inferring from the selected
+ * driver. Reading alone can succeed on a read-only filesystem and would have
+ * us claim the data is durable right up until the first save fails.
+ */
 export async function dbStatus() {
-  await readDb();
+  await writeDb(() => undefined);
   return {
     driver: driver?.name ?? "unknown",
     persistent: driver?.name !== "memory",
