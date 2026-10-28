@@ -144,13 +144,19 @@ async function loadSeed(): Promise<Db> {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Per-instance copy of the document.
+ * Short-lived per-instance copy of the document.
  *
- * Note the consequence: a warm instance will write its cached copy back on
- * the next save, so clearing the stored document out of band does not reset a
- * running deployment until its instances recycle.
+ * A deployment runs on several instances, each with its own memory. Holding
+ * the document indefinitely would mean one instance writing a copy that never
+ * saw another instance's changes — silently discarding them — and an edit made
+ * outside the app never taking effect at all.
+ *
+ * So the cache only absorbs bursts within a single request, and every write
+ * re-reads the stored document first. The read costs one 13 KB fetch; losing
+ * someone's account does not.
  */
-let cache: Db | null = null;
+let cache: { db: Db; at: number } | null = null;
+const CACHE_TTL_MS = 2_000;
 
 /**
  * Serialises writes within this process. It does not coordinate across
@@ -164,8 +170,10 @@ function enqueue<T>(task: () => Promise<T>): Promise<T> {
   return run;
 }
 
-export async function readDb(): Promise<Db> {
-  if (cache) return cache;
+export async function readDb(options?: { fresh?: boolean }): Promise<Db> {
+  if (!options?.fresh && cache && Date.now() - cache.at < CACHE_TTL_MS) {
+    return cache.db;
+  }
 
   const active = selectDriver();
   let loaded: Db | null = null;
@@ -191,8 +199,8 @@ export async function readDb(): Promise<Db> {
     console.log(`[db] using "${driver?.name ?? active.name}" driver`);
   }
 
-  cache = loaded;
-  return cache;
+  cache = { db: loaded, at: Date.now() };
+  return loaded;
 }
 
 /**
@@ -201,7 +209,9 @@ export async function readDb(): Promise<Db> {
  */
 export async function writeDb<T>(mutate: (db: Db) => T | Promise<T>): Promise<T> {
   return enqueue(async () => {
-    const db = await readDb();
+    // Always re-read before mutating: another instance may have written since
+    // this one last looked, and mutating a stale copy would drop its changes.
+    const db = await readDb({ fresh: true });
     const result = await mutate(db);
     try {
       await selectDriver().write(db);
@@ -209,7 +219,7 @@ export async function writeDb<T>(mutate: (db: Db) => T | Promise<T>): Promise<T>
       demoteToMemory(error);
       await driver!.write(db);
     }
-    cache = db;
+    cache = { db, at: Date.now() };
     return result;
   });
 }
