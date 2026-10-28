@@ -60,8 +60,25 @@ function layout(heading: string, body: string, cta?: { label: string; href: stri
 </html>`;
 }
 
+/**
+ * Base for the links inside emails.
+ *
+ * Vercel sets the production domain itself, so a deployed build does not need
+ * APP_URL configured — without this fallback every link in every production
+ * email would quietly point at localhost, which nobody notices until a real
+ * message reaches a real person.
+ */
 function appUrl() {
-  return process.env.APP_URL || "http://localhost:3000";
+  if (process.env.APP_URL) return process.env.APP_URL;
+
+  const production = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (production) return `https://${production}`;
+
+  // Preview deployments: link back to the deployment that sent the mail.
+  const deployment = process.env.VERCEL_URL;
+  if (deployment) return `https://${deployment}`;
+
+  return "http://localhost:3000";
 }
 
 export function welcomeEmail(name: string, to: string): EmailMessage {
