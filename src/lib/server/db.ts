@@ -22,7 +22,19 @@ import { type Db, DB_VERSION, emptyDb } from "./schema";
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "db.json");
 const SEED_PATH = path.join(DATA_DIR, "db.seed.json");
-const BLOB_PATHNAME = "herfa/db.json";
+/**
+ * One document per environment.
+ *
+ * The Blob store is shared by every environment that holds the token, so
+ * without this a developer running the app locally would be reading and
+ * writing the live demo's database.
+ */
+const BLOB_PATHNAME = (() => {
+  const env = process.env.VERCEL_ENV;
+  if (env === "production") return "herfa/db.json";
+  if (env) return `herfa/db.${env}.json`;
+  return "herfa/db.local.json";
+})();
 
 interface Driver {
   name: string;
@@ -131,6 +143,13 @@ async function loadSeed(): Promise<Db> {
 /* Public API                                                                 */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Per-instance copy of the document.
+ *
+ * Note the consequence: a warm instance will write its cached copy back on
+ * the next save, so clearing the stored document out of band does not reset a
+ * running deployment until its instances recycle.
+ */
 let cache: Db | null = null;
 
 /**
