@@ -116,16 +116,28 @@ Where that JSON document lives is chosen at runtime:
 | `blob` | when `BLOB_READ_WRITE_TOKEN` is set — the same document in Vercel Blob | yes |
 | `memory` | last resort, when neither can be written | **no** |
 
-On Vercel the function filesystem is read-only, so without a Blob store the
-app demotes to `memory`: the fourteen seeded accounts work and every flow runs,
-but anything created in the demo is lost when the instance recycles. This is
-not silent — `/api/status` reports the active driver and the admin dashboard
-shows a warning. To make it durable:
+A Blob store (`herfa-db`) is provisioned and connected, so the deployed demo
+keeps what people create. `BLOB_READ_WRITE_TOKEN` is set for production,
+preview and development; `vercel env pull` brings it into `.env.local`.
+
+The document is namespaced by environment — `herfa/db.json` in production,
+`herfa/db.local.json` when you run it locally — because every environment
+shares one store, and without that your local runs would be editing the live
+demo's data.
+
+If the token is ever missing, the app falls back to a local file and then to
+memory. That fallback is not silent: `/api/status` performs a real write probe
+and the admin dashboard shows a warning when storage is not durable.
+
+**Resetting the demo accounts** (the footer button only resets the client-side
+catalogue):
 
 ```bash
-vercel blob create-store herfa-db --access private --yes
-vercel env pull
+vercel blob put data/db.seed.json --pathname herfa/db.json --access private --force --content-type application/json
 ```
+
+It takes effect within a couple of seconds — instances hold the document for
+no longer than that.
 
 **Client-side** — stores, products, orders, expenses, reviews, announcements
 and the delivery network remain in the Zustand store (`src/lib/store/`),
