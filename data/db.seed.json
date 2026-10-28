@@ -19,7 +19,7 @@
         "publishContent": false
       },
       "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
+      "passwordHash": "scrypt:09a0107093be05212a2e89e1d05a66d6:a1b14006c5a9e6ee693c2dd752b8778f472b03bf85c287c28ff62fa77a1a65faa0d3e93eb8649a9db5f7630d5bae8e3e15200a2e0b4c05f6d80330aa5d45da13",
       "createdAt": "2026-03-14T09:00:00.000Z"
     },
     {
@@ -41,12 +41,12 @@
         "publishContent": true
       },
       "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
+      "passwordHash": "scrypt:09a0107093be05212a2e89e1d05a66d6:a1b14006c5a9e6ee693c2dd752b8778f472b03bf85c287c28ff62fa77a1a65faa0d3e93eb8649a9db5f7630d5bae8e3e15200a2e0b4c05f6d80330aa5d45da13",
       "createdAt": "2026-01-20T09:00:00.000Z"
     },
     {
       "id": "u-admin-1",
-      "name": "هبة إدارة حِرفة",
+      "name": "إدارة حِرفة",
       "email": "admin@hirfa.app",
       "phone": "050-000-0003",
       "townId": "beer-sheva",
@@ -63,250 +63,8 @@
         "publishContent": false
       },
       "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
+      "passwordHash": "scrypt:09a0107093be05212a2e89e1d05a66d6:a1b14006c5a9e6ee693c2dd752b8778f472b03bf85c287c28ff62fa77a1a65faa0d3e93eb8649a9db5f7630d5bae8e3e15200a2e0b4c05f6d80330aa5d45da13",
       "createdAt": "2025-11-02T09:00:00.000Z"
-    },
-    {
-      "id": "u-store-2",
-      "name": "نور أبو عصا",
-      "email": "noor@hirfa.app",
-      "phone": "050-000-0004",
-      "townId": "rahat",
-      "locale": "ar",
-      "roles": [
-        "buyer",
-        "seller"
-      ],
-      "consents": {
-        "terms": true,
-        "privacy": true,
-        "marketingEmail": false,
-        "marketingWhatsapp": false,
-        "publishContent": true
-      },
-      "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
-      "createdAt": "2026-02-01T09:00:00.000Z"
-    },
-    {
-      "id": "u-store-3",
-      "name": "فاطمة الصانع",
-      "email": "fatima@hirfa.app",
-      "phone": "050-000-0005",
-      "townId": "tel-sheva",
-      "locale": "ar",
-      "roles": [
-        "buyer",
-        "seller"
-      ],
-      "consents": {
-        "terms": true,
-        "privacy": true,
-        "marketingEmail": false,
-        "marketingWhatsapp": false,
-        "publishContent": true
-      },
-      "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
-      "createdAt": "2026-02-01T09:00:00.000Z"
-    },
-    {
-      "id": "u-store-4",
-      "name": "رانيا أبو جويعد",
-      "email": "rania@hirfa.app",
-      "phone": "050-000-0006",
-      "townId": "segev-shalom",
-      "locale": "ar",
-      "roles": [
-        "buyer",
-        "seller"
-      ],
-      "consents": {
-        "terms": true,
-        "privacy": true,
-        "marketingEmail": false,
-        "marketingWhatsapp": false,
-        "publishContent": true
-      },
-      "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
-      "createdAt": "2026-02-01T09:00:00.000Z"
-    },
-    {
-      "id": "u-store-5",
-      "name": "سناء أبو حماد",
-      "email": "sanaa@hirfa.app",
-      "phone": "050-000-0007",
-      "townId": "hura",
-      "locale": "ar",
-      "roles": [
-        "buyer",
-        "seller"
-      ],
-      "consents": {
-        "terms": true,
-        "privacy": true,
-        "marketingEmail": false,
-        "marketingWhatsapp": false,
-        "publishContent": true
-      },
-      "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
-      "createdAt": "2026-02-01T09:00:00.000Z"
-    },
-    {
-      "id": "u-store-6",
-      "name": "لميس الوكيلي",
-      "email": "lamees@hirfa.app",
-      "phone": "050-000-0008",
-      "townId": "laqiya",
-      "locale": "ar",
-      "roles": [
-        "buyer",
-        "seller"
-      ],
-      "consents": {
-        "terms": true,
-        "privacy": true,
-        "marketingEmail": false,
-        "marketingWhatsapp": false,
-        "publishContent": true
-      },
-      "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
-      "createdAt": "2026-02-01T09:00:00.000Z"
-    },
-    {
-      "id": "u-store-7",
-      "name": "هدى أبو عرار",
-      "email": "huda@hirfa.app",
-      "phone": "050-000-0009",
-      "townId": "arara",
-      "locale": "ar",
-      "roles": [
-        "buyer",
-        "seller"
-      ],
-      "consents": {
-        "terms": true,
-        "privacy": true,
-        "marketingEmail": false,
-        "marketingWhatsapp": false,
-        "publishContent": true
-      },
-      "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
-      "createdAt": "2026-02-01T09:00:00.000Z"
-    },
-    {
-      "id": "u-store-8",
-      "name": "سلمى أبو سبيلة",
-      "email": "salma@hirfa.app",
-      "phone": "050-000-0010",
-      "townId": "ksar-a-sir",
-      "locale": "ar",
-      "roles": [
-        "buyer",
-        "seller"
-      ],
-      "consents": {
-        "terms": true,
-        "privacy": true,
-        "marketingEmail": false,
-        "marketingWhatsapp": false,
-        "publishContent": true
-      },
-      "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
-      "createdAt": "2026-02-01T09:00:00.000Z"
-    },
-    {
-      "id": "u-store-9",
-      "name": "مريم القريناوي",
-      "email": "mariam@hirfa.app",
-      "phone": "050-000-0011",
-      "townId": "abu-qrenat",
-      "locale": "ar",
-      "roles": [
-        "buyer",
-        "seller"
-      ],
-      "consents": {
-        "terms": true,
-        "privacy": true,
-        "marketingEmail": false,
-        "marketingWhatsapp": false,
-        "publishContent": true
-      },
-      "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
-      "createdAt": "2026-02-01T09:00:00.000Z"
-    },
-    {
-      "id": "u-store-10",
-      "name": "عائشة أبو مديغم",
-      "email": "aisha@hirfa.app",
-      "phone": "050-000-0012",
-      "townId": "rahat",
-      "locale": "ar",
-      "roles": [
-        "buyer",
-        "seller"
-      ],
-      "consents": {
-        "terms": true,
-        "privacy": true,
-        "marketingEmail": false,
-        "marketingWhatsapp": false,
-        "publishContent": true
-      },
-      "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
-      "createdAt": "2026-02-01T09:00:00.000Z"
-    },
-    {
-      "id": "u-store-11",
-      "name": "دلال النصاصرة",
-      "email": "dalal@hirfa.app",
-      "phone": "050-000-0013",
-      "townId": "tel-sheva",
-      "locale": "ar",
-      "roles": [
-        "buyer",
-        "seller"
-      ],
-      "consents": {
-        "terms": true,
-        "privacy": true,
-        "marketingEmail": false,
-        "marketingWhatsapp": false,
-        "publishContent": true
-      },
-      "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
-      "createdAt": "2026-02-01T09:00:00.000Z"
-    },
-    {
-      "id": "u-store-12",
-      "name": "منى أبو رقيق",
-      "email": "mouna@hirfa.app",
-      "phone": "050-000-0014",
-      "townId": "segev-shalom",
-      "locale": "ar",
-      "roles": [
-        "buyer",
-        "seller"
-      ],
-      "consents": {
-        "terms": true,
-        "privacy": true,
-        "marketingEmail": false,
-        "marketingWhatsapp": false,
-        "publishContent": true
-      },
-      "subscription": "free",
-      "passwordHash": "scrypt:8688c9e0ac809d6357f1c355c4e5108d:2ac5d9bc554e5f8be20570497433d570f91f00ac7c2e7fcbcf8029b1e7ccc2ab692a8acc0aff4ff762d6bd6ac58ebf052e18d5045594a4b227e3adff025d8a42",
-      "createdAt": "2026-02-01T09:00:00.000Z"
     }
   ],
   "sessions": [],

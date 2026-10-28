@@ -46,12 +46,12 @@ Pick one from the buttons on `/login`, or sign in with the password `hirfa2026`:
 One account can hold several roles at once, as the PRD requires — the seller
 account is also a buyer, and the admin is too.
 
-The seed also holds an account for each of the other eleven storefronts
-(`noor@`, `fatima@`, `rania@`, … all `@hirfa.app`, same password), so every
-store has a real owner who can sign in and manage it.
+One account per portal, which is all the prototype needs. The other eleven
+storefronts are catalogue content — they display and can be ordered from, but
+nobody signs in as them.
 
-These are fixtures in a public repo, not secrets. Replace the lot before any
-real deployment.
+These are fixtures in a public repo, not secrets. Replace them before any real
+deployment.
 
 ## What is implemented
 
@@ -150,21 +150,21 @@ swapping the store's actions for API calls — the components do not change.
 
 ## Email
 
-Every message is written to an outbox in the database first, then transmitted
-only if a provider is configured. With no API key the app still works end to
-end and `/admin/emails` shows exactly what would have been sent — which is what
-makes it demoable before anyone signs up for anything.
+Every message is written to an outbox in the database and shown at
+`/admin/emails`. Nothing is transmitted — the prototype runs in outbox mode on
+purpose, so the whole flow is demonstrable without anyone signing up for a mail
+provider or verifying a domain.
 
 Six messages are wired to real events: a welcome on registration, an invite
 when an admin creates an account, a notice to the seller when an order arrives,
 a notice to the buyer on every status change, a notice to the admins when
 someone applies to sell, and the decision when that application is answered.
 
-To turn on real delivery, set `RESEND_API_KEY` (see `.env.example`). One
-caveat worth knowing before the demo: Resend's default `onboarding@resend.dev`
-sender only delivers to the Resend account owner's own address — reaching
-anyone else needs a verified domain. The outbox surfaces the provider's error
-verbatim, so this failure explains itself rather than looking like a bug.
+Turning on real delivery later is one environment variable and no code change:
+set `RESEND_API_KEY` and `EMAIL_FROM` (see `.env.example`). Be aware that every
+provider requires either a verified domain or a verified sender address before
+it will deliver to arbitrary recipients — that is a decision for whoever owns
+the project's domain, not something this prototype assumes.
 
 Temporary passwords are masked in the stored copy, so the outbox never becomes
 a readable password list.

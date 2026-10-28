@@ -38,7 +38,7 @@ function resolveProvider(): Provider | null {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return null;
 
-  const from = process.env.EMAIL_FROM || "Hirfa <onboarding@resend.dev>";
+  const from = process.env.EMAIL_FROM || "Hirfa <no-reply@example.com>";
 
   return {
     name: "resend",
@@ -53,8 +53,8 @@ function resolveProvider(): Provider | null {
         text: message.text,
       });
       if (error) {
-        // Surfaced verbatim in the admin outbox. The common one is the
-        // resend.dev sandbox 403: it only delivers to the account owner.
+        // Surfaced verbatim in the admin outbox so a provider rejection
+        // explains itself instead of looking like a bug in the app.
         throw new Error(`${error.name}: ${error.message}`);
       }
       return { id: data?.id };
@@ -113,6 +113,6 @@ export function emailProviderStatus() {
   return {
     configured: Boolean(process.env.RESEND_API_KEY),
     provider: process.env.RESEND_API_KEY ? "resend" : "outbox",
-    from: process.env.EMAIL_FROM || "Hirfa <onboarding@resend.dev>",
+    from: process.env.EMAIL_FROM || "Hirfa <no-reply@example.com>",
   };
 }
