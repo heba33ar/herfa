@@ -7,8 +7,9 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/field";
 import { EmptyState, Notice } from "@/components/ui/feedback";
 import { PageHeader } from "@/components/ui/misc";
-import { TOWNS } from "@/lib/data/towns";
-import { CATEGORIES } from "@/lib/data/categories";
+import { TOWNS, townName } from "@/lib/data/towns";
+import { CATEGORIES, CATEGORY_BY_SLUG } from "@/lib/data/categories";
+import { api } from "@/lib/api";
 import { useHirfa } from "@/lib/store";
 import { useCurrentUser, useLocale, useT } from "@/lib/store/hooks";
 import type { CategorySlug, DeliveryMethod } from "@/lib/types";
@@ -88,6 +89,14 @@ export default function SellerApplyPage() {
       deliveryOptions: delivery,
       sampleImages: images,
       acceptedTerms: true,
+    });
+    // Let the admins know there is something in the queue.
+    void api.notify({
+      type: "application_submitted",
+      projectName: form.projectName.trim(),
+      ownerName: form.ownerName.trim(),
+      town: townName(form.townId, locale),
+      category: CATEGORY_BY_SLUG.get(form.category)?.name[locale] ?? form.category,
     });
     setSubmitted(result.applicationId);
   }

@@ -2,15 +2,8 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type {
-  AuditLogEntry,
-  Order,
-  OrderStatus,
-  Store,
-  User,
-} from "@/lib/types";
+import type { AuditLogEntry, Order, OrderStatus, Store } from "@/lib/types";
 import {
-  DEMO_PASSWORD,
   SEED_ANNOUNCEMENTS,
   SEED_APPLICATIONS,
   SEED_DELIVERY_OFFERS,
@@ -23,7 +16,6 @@ import {
   SEED_REVIEWS,
   SEED_STORES,
   SEED_TICKETS,
-  SEED_USERS,
   SEED_WORKSHOPS,
 } from "@/lib/data/seed";
 import { createId, slugify, sum } from "@/lib/utils";
@@ -37,7 +29,10 @@ function initialData(): HirfaData {
   return {
     locale: "ar",
     currentUserId: null,
-    users: structuredClone(SEED_USERS),
+    sessionChecked: false,
+    // Accounts live in the JSON database. This array holds the signed-in user
+    // only, mirrored from /api/auth/me.
+    users: [],
     stores: structuredClone(SEED_STORES),
     products: structuredClone(SEED_PRODUCTS),
     orders: structuredClone(SEED_ORDERS),
@@ -117,83 +112,43 @@ export const useHirfa = create<HirfaStore>()(
 
         setLocale: (locale) => set({ locale }),
 
-        /* ---------------------------------------------------------- auth */
-        login: (email, password) => {
-          const user = get().users.find(
-            (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
-          );
-          if (!user || password !== DEMO_PASSWORD) {
-            return { ok: false, error: "credentials" as const };
-          }
-          set({ currentUserId: user.id, locale: user.locale });
-          return { ok: true };
-        },
+        /* ------------------------------------------------------- session */
+        setSessionUser: (user) =>
+          // The locale is NOT adopted from the account here. This runs on
+          // every page load, and doing so would silently undo whatever
+          // language the visitor picked a moment earlier. Login sets it once,
+          // and the switcher writes the choice back to the account.
+          set({
+            users: user ? [user] : [],
+            currentUserId: user?.id ?? null,
+            sessionChecked: true,
+          }),
 
-        loginAs: (userId) => {
-          const user = get().users.find((u) => u.id === userId);
-          if (user) set({ currentUserId: user.id });
-        },
+        setSessionChecked: (sessionChecked) => set({ sessionChecked }),
 
-        register: ({ name, email, password, phone, townId }) => {
-          void password;
-          const exists = get().users.some(
-            (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
-          );
-          if (exists) return { ok: false, error: "email_taken" as const };
-          const user: User = {
-            id: createId("u"),
-            name: name.trim(),
-            email: email.trim(),
-            phone,
-            townId,
-            locale: get().locale,
-            roles: ["buyer"],
-            consents: {
-              terms: true,
-              privacy: true,
-              marketingEmail: false,
-              marketingWhatsapp: false,
-              publishContent: false,
-            },
-            subscription: "free",
-            createdAt: nowIso(),
-          };
+        clearLocalAccountData: () =>
           set((s) => ({
-            users: [...s.users, user],
-            currentUserId: user.id,
-            metrics: { ...s.metrics, registeredBuyers: s.metrics.registeredBuyers + 1 },
-          }));
-          return { ok: true };
-        },
-
-        logout: () => set({ currentUserId: null }),
-
-        updateProfile: (patch) => {
-          const id = get().currentUserId;
-          if (!id) return;
-          set((s) => ({
-            users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
-            locale: patch.locale ?? s.locale,
-          }));
-        },
-
-        deleteAccount: () => {
-          const id = get().currentUserId;
-          if (!id) return;
-          set((s) => ({
-            users: s.users.filter((u) => u.id !== id),
-            // Completed orders stay for accounting, but are anonymised.
+            // Orders live in this browser, so deleting the account on the
+            // server is not enough — the name, phone and delivery address on
+            // past orders would stay readable on this device.
             orders: s.orders.map((o) =>
-              o.buyerId === id
-                ? { ...o, buyerName: "مستخدمة محذوفة", buyerPhone: "—", buyerId: "deleted" }
+              o.buyerId === s.currentUserId
+                ? {
+                    ...o,
+                    buyerId: "deleted",
+                    buyerName: "مستخدمة محذوفة",
+                    buyerPhone: "—",
+                    deliveryAddress: undefined,
+                  }
                 : o,
             ),
             favoriteProductIds: [],
             favoriteStoreIds: [],
             cart: { storeId: null, items: [] },
+            users: [],
             currentUserId: null,
-          }));
-        },
+            sessionChecked: true,
+          })),
 
         /* ---------------------------------------------------- favourites */
         toggleFavoriteProduct: (productId) =>
@@ -689,11 +644,42 @@ export const useHirfa = create<HirfaStore>()(
           set((s) => ({ metrics: { ...s.metrics, storeViews: s.metrics.storeViews + 1 } })),
 
         /* ---------------------------------------------------------- demo */
-        resetData: () => set({ ...initialData() }),
+        // Resets the demo catalogue and orders. Accounts live on the server,
+        // so the session is deliberately preserved — clearing it here would
+        // log the UI out while the cookie stayed valid.
+        resetData: () =>
+          set((s) => ({
+            ...initialData(),
+            locale: s.locale,
+            users: s.users,
+            currentUserId: s.currentUserId,
+            sessionChecked: s.sessionChecked,
+          })),
       };
     },
     {
       name: STORAGE_KEY,
+      // v1 persisted the whole account table and the session id. Those now
+      // live on the server, so they are stripped on write and dropped from
+      // any state an older build already saved in the browser.
+      partialize: (state) => {
+        const { users, currentUserId, sessionChecked, ...rest } = state;
+        void users;
+        void currentUserId;
+        void sessionChecked;
+        return rest as unknown as HirfaStore;
+      },
+      migrate: (persisted) => {
+        if (!persisted || typeof persisted !== "object") {
+          return persisted as unknown as HirfaStore;
+        }
+        const { users, currentUserId, sessionChecked, ...rest } =
+          persisted as Record<string, unknown>;
+        void users;
+        void currentUserId;
+        void sessionChecked;
+        return rest as unknown as HirfaStore;
+      },
       // The store is imported by server-rendered modules too; fall back to a
       // no-op store there so prerendering never touches localStorage.
       storage: createJSONStorage(() =>
@@ -701,7 +687,7 @@ export const useHirfa = create<HirfaStore>()(
           ? { getItem: () => null, setItem: () => {}, removeItem: () => {} }
           : localStorage,
       ),
-      version: 1,
+      version: 2,
     },
   ),
 );

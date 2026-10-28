@@ -9,9 +9,11 @@ import { Card, CardBody, CardHeader, CardTitle, CardDescription } from "@/compon
 import { Field, Input, Select, Switch } from "@/components/ui/field";
 import { Modal, Notice } from "@/components/ui/feedback";
 import { PageHeader } from "@/components/ui/misc";
+import { PasswordCard } from "@/components/account/password-card";
 import { useToast } from "@/components/ui/toast";
 import { TOWNS } from "@/lib/data/towns";
 import { LOCALES, LOCALE_META } from "@/lib/i18n/config";
+import { api } from "@/lib/api";
 import { useHirfa } from "@/lib/store";
 import { useCurrentUser, useLocale, useT } from "@/lib/store/hooks";
 import type { Locale } from "@/lib/types";
@@ -22,8 +24,26 @@ export default function AccountPage() {
   const router = useRouter();
   const toast = useToast();
   const user = useCurrentUser();
-  const updateProfile = useHirfa((s) => s.updateProfile);
-  const deleteAccount = useHirfa((s) => s.deleteAccount);
+  const setSessionUser = useHirfa((s) => s.setSessionUser);
+  const clearLocalAccountData = useHirfa((s) => s.clearLocalAccountData);
+  const setLocale = useHirfa((s) => s.setLocale);
+  const [pending, setPending] = useState(false);
+
+  /**
+   * Persists to the JSON database, then mirrors the result into the store.
+   * Returns whether it worked so callers do not announce a save that failed.
+   */
+  async function patchProfile(patch: Parameters<typeof api.updateProfile>[0]) {
+    setPending(true);
+    const result = await api.updateProfile(patch);
+    setPending(false);
+    if (!result.ok) {
+      toast(result.error === "unauthorized" ? t("common.sessionEnded") : t("common.error"), "error");
+      return false;
+    }
+    setSessionUser(result.data.user);
+    return true;
+  }
 
   const [form, setForm] = useState({
     name: user?.name ?? "",
@@ -35,15 +55,14 @@ export default function AccountPage() {
 
   if (!user) return null;
 
-  function save(e: React.FormEvent) {
+  async function save(e: React.FormEvent) {
     e.preventDefault();
-    updateProfile({
+    const ok = await patchProfile({
       name: form.name,
-      email: form.email,
       phone: form.phone || undefined,
       townId: form.townId || undefined,
     });
-    toast(t("account.saved"), "success");
+    if (ok) toast(t("account.saved"), "success");
   }
 
   return (
@@ -83,16 +102,11 @@ export default function AccountPage() {
                   />
                 )}
               </Field>
-              <Field label={t("account.email")} required>
-                {(id) => (
-                  <Input
-                    id={id}
-                    type="email"
-                    dir="ltr"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  />
-                )}
+              <Field
+                label={t("account.email")}
+                hint="البريد الإلكتروني هو معرّف الدخول ولا يمكن تعديله من هنا."
+              >
+                {(id) => <Input id={id} type="email" dir="ltr" value={form.email} readOnly />}
               </Field>
               <Field label={t("account.phone")}>
                 {(id) => (
@@ -126,7 +140,11 @@ export default function AccountPage() {
                   <Select
                     id={id}
                     value={user!.locale}
-                    onChange={(e) => updateProfile({ locale: e.target.value as Locale })}
+                    onChange={(e) => {
+                      const next = e.target.value as Locale;
+                      setLocale(next);
+                      void patchProfile({ locale: next });
+                    }}
                   >
                     {LOCALES.map((code) => (
                       <option key={code} value={code}>
@@ -137,7 +155,9 @@ export default function AccountPage() {
                 )}
               </Field>
             </div>
-            <Button type="submit">{t("account.save")}</Button>
+            <Button type="submit" disabled={pending}>
+              {pending ? t("common.loading") : t("account.save")}
+            </Button>
           </form>
         </CardBody>
       </Card>
@@ -155,7 +175,7 @@ export default function AccountPage() {
             label={t("account.notifEmail")}
             checked={user.consents.marketingEmail}
             onChange={(next) =>
-              updateProfile({ consents: { ...user.consents, marketingEmail: next } })
+              void patchProfile({ consents: { ...user.consents, marketingEmail: next } })
             }
           />
           <div className="h-px bg-sand-200" />
@@ -163,7 +183,7 @@ export default function AccountPage() {
             label={t("account.notifWhatsapp")}
             checked={user.consents.marketingWhatsapp}
             onChange={(next) =>
-              updateProfile({ consents: { ...user.consents, marketingWhatsapp: next } })
+              void patchProfile({ consents: { ...user.consents, marketingWhatsapp: next } })
             }
           />
         </CardBody>
@@ -205,6 +225,8 @@ export default function AccountPage() {
         </CardBody>
       </Card>
 
+      <PasswordCard />
+
       {/* danger zone */}
       <Card className="border-danger-500/25">
         <CardHeader className="border-danger-500/15">
@@ -232,8 +254,19 @@ export default function AccountPage() {
             </Button>
             <Button
               variant="danger"
-              onClick={() => {
-                deleteAccount();
+              onClick={async () => {
+                const result = await api.deleteAccount();
+                if (!result.ok) {
+                  toast(
+                    result.error === "last_admin"
+                      ? t("account.lastAdmin")
+                      : t("common.error"),
+                    "error",
+                  );
+                  setConfirmDelete(false);
+                  return;
+                }
+                clearLocalAccountData();
                 router.push("/");
               }}
             >

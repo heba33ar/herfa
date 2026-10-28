@@ -8,6 +8,7 @@ import { Checkbox, Field, Input, Select } from "@/components/ui/field";
 import { Notice } from "@/components/ui/feedback";
 import { Logo } from "@/components/layout/logo";
 import { TOWNS } from "@/lib/data/towns";
+import { api } from "@/lib/api";
 import { useHirfa } from "@/lib/store";
 import { useLocale, useT } from "@/lib/store/hooks";
 
@@ -15,7 +16,8 @@ export default function RegisterPage() {
   const t = useT();
   const locale = useLocale();
   const router = useRouter();
-  const register = useHirfa((s) => s.register);
+  const setSessionUser = useHirfa((s) => s.setSessionUser);
+  const [pending, setPending] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -31,28 +33,34 @@ export default function RegisterPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const next: Record<string, string> = {};
     if (!form.name.trim()) next.name = t("common.required");
     if (!form.email.trim()) next.email = t("common.required");
-    if (form.password.length < 6) next.password = "٦ أحرف على الأقل";
+    if (form.password.length < 6) next.password = t("account.passwordTooShort");
     if (!accepted) next.terms = t("common.required");
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
-    const result = register({
+    setPending(true);
+    const result = await api.register({
       name: form.name,
       email: form.email,
       password: form.password,
       phone: form.phone || undefined,
       townId: form.townId || undefined,
+      locale,
     });
+    setPending(false);
 
     if (!result.ok) {
-      setErrors({ email: t("auth.emailTaken") });
+      setErrors({
+        email: result.error === "email_taken" ? t("auth.emailTaken") : result.error,
+      });
       return;
     }
+    setSessionUser(result.data.user);
     router.push("/");
   }
 
@@ -142,8 +150,8 @@ export default function RegisterPage() {
 
             <Notice tone="neutral">{t("account.consentNotice")}</Notice>
 
-            <Button type="submit" size="lg" className="w-full">
-              {t("auth.registerTitle")}
+            <Button type="submit" size="lg" className="w-full" disabled={pending}>
+              {pending ? t("common.loading") : t("auth.registerTitle")}
             </Button>
           </form>
 

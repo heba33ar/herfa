@@ -6,6 +6,7 @@ import { Info, MousePointerClick, ShoppingCart, Store, Users } from "lucide-reac
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { Notice } from "@/components/ui/feedback";
 import { PageHeader, StatCard } from "@/components/ui/misc";
+import { StorageNotice } from "@/components/admin/storage-notice";
 import { useHirfa } from "@/lib/store";
 import { useLocale, useT } from "@/lib/store/hooks";
 import { formatNumber, formatPrice } from "@/lib/format";
@@ -68,6 +69,8 @@ export default function AdminOverviewPage() {
         title={t("admin.title")}
         description="نظرة عامة على المنصة. المؤشرات معروضة منفصلة عن بعضها عن قصد."
       />
+
+      <StorageNotice />
 
       <Notice tone="warning" icon={Info}>
         {t("admin.metricsNotice")}

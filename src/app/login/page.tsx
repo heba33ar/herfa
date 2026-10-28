@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LayoutDashboard, ShieldCheck, ShoppingBag } from "lucide-react";
@@ -8,28 +8,37 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { Notice } from "@/components/ui/feedback";
 import { Logo } from "@/components/layout/logo";
+import { api } from "@/lib/api";
 import { useHirfa } from "@/lib/store";
 import { useT } from "@/lib/store/hooks";
-import { DEMO_PASSWORD } from "@/lib/data/seed";
 
 export default function LoginPage() {
   const t = useT();
   const router = useRouter();
-  const login = useHirfa((s) => s.login);
-  const loginAs = useHirfa((s) => s.loginAs);
+  const setSessionUser = useHirfa((s) => s.setSessionUser);
+  const setLocale = useHirfa((s) => s.setLocale);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [pending, startTransition] = useTransition();
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const result = login(email, password);
+  async function signIn(request: Promise<Awaited<ReturnType<typeof api.login>>>, to: string) {
+    setError("");
+    const result = await request;
     if (!result.ok) {
       setError(t("auth.invalidCredentials"));
       return;
     }
-    router.push("/");
+    setSessionUser(result.data.user);
+    // Signing in is the one moment it is right to adopt the account's language.
+    setLocale(result.data.user.locale);
+    startTransition(() => router.push(to));
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    void signIn(api.login(email, password), "/");
   }
 
   const demoAccounts = [
@@ -79,8 +88,8 @@ export default function LoginPage() {
 
             {error && <Notice tone="danger">{error}</Notice>}
 
-            <Button type="submit" size="lg" className="w-full">
-              {t("auth.loginTitle")}
+            <Button type="submit" size="lg" className="w-full" disabled={pending}>
+              {pending ? t("common.loading") : t("auth.loginTitle")}
             </Button>
           </form>
 
@@ -102,10 +111,7 @@ export default function LoginPage() {
                 key={account.id}
                 variant="outline"
                 className="justify-start"
-                onClick={() => {
-                  loginAs(account.id);
-                  router.push(account.href);
-                }}
+                onClick={() => void signIn(api.demoLogin(account.id), account.href)}
               >
                 <account.icon className="size-4 text-sand-500" />
                 {account.label}
@@ -113,7 +119,7 @@ export default function LoginPage() {
             ))}
           </div>
           <p className="mt-4 text-[0.6875rem] text-sand-500" dir="ltr">
-            buyer@hirfa.app · seller@hirfa.app · admin@hirfa.app — {DEMO_PASSWORD}
+            buyer@hirfa.app · seller@hirfa.app · admin@hirfa.app — hirfa2026
           </p>
         </div>
       </div>

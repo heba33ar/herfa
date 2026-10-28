@@ -9,6 +9,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { EmptyState, Notice } from "@/components/ui/feedback";
 import { PageHeader } from "@/components/ui/misc";
 import { LoadingBlock, RequireAuth } from "@/components/layout/guards";
+import { api } from "@/lib/api";
 import { useHirfa } from "@/lib/store";
 import { useCurrentUser, useHydrated, useLocale, useT } from "@/lib/store/hooks";
 import { formatPrice } from "@/lib/format";
@@ -97,7 +98,7 @@ function CheckoutForm() {
   const subtotal = sum(lines, (l) => (l.unitPrice ?? 0) * l.line.quantity);
   const deliveryFee = deliveryMethod === "pickup" ? 0 : (store.deliveryFee ?? 0);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const nextErrors: Record<string, string> = {};
     if (!name.trim()) nextErrors.name = t("common.required");
@@ -116,7 +117,21 @@ function CheckoutForm() {
 
     if (result.ok && result.orderId) {
       setPlacedId(result.orderId);
+      // Tell the seller. The server resolves her address from the store's
+      // owner id, so no email address is ever sent from the browser.
+      void api.notify({
+        type: "order_placed",
+        ownerId: store!.ownerId,
+        reference: result.orderId.replace(/^o-/, ""),
+        buyerName: name.trim(),
+        total: formatPrice(subtotal + deliveryFee, locale),
+        items: lines.map((l) => `${l.product?.name} × ${l.line.quantity}`).join("، "),
+      });
       router.refresh();
+    } else {
+      // placeOrder refuses when the store has paused orders since the cart
+      // was filled. Silence here looked like a dead button.
+      setErrors({ form: t("checkout.failed") });
     }
   }
 
@@ -204,6 +219,8 @@ function CheckoutForm() {
               </Field>
             </div>
           </section>
+
+          {errors.form && <Notice tone="danger">{errors.form}</Notice>}
 
           <Notice tone="info" icon={Info}>
             {t("checkout.paymentNotice")}

@@ -45,6 +45,9 @@ export interface CheckoutDetails {
 export interface HirfaData {
   locale: Locale;
   currentUserId: string | null;
+  /** True once /api/auth/me has answered, so guards do not flash "signed out". */
+  sessionChecked: boolean;
+  /** Mirrors the signed-in user only — never the whole account table. */
   users: User[];
   stores: Store[];
   products: Product[];
@@ -69,19 +72,18 @@ export interface HirfaData {
 export interface HirfaActions {
   setLocale: (locale: Locale) => void;
 
-  /* auth */
-  login: (email: string, password: string) => { ok: boolean; error?: "credentials" };
-  loginAs: (userId: string) => void;
-  register: (input: {
-    name: string;
-    email: string;
-    password: string;
-    phone?: string;
-    townId?: string;
-  }) => { ok: boolean; error?: "email_taken" };
-  logout: () => void;
-  updateProfile: (patch: Partial<User>) => void;
-  deleteAccount: () => void;
+  /**
+   * Session.
+   *
+   * Accounts live in the JSON database behind /api/auth/* — the store only
+   * mirrors whoever is signed in, so that the rest of the app (orders, audit
+   * entries, the seller's own store lookup) can resolve the current user
+   * synchronously without every component awaiting a fetch.
+   */
+  setSessionUser: (user: User | null) => void;
+  setSessionChecked: (checked: boolean) => void;
+  /** Clears everything about the signed-in person held in this browser. */
+  clearLocalAccountData: () => void;
 
   /* favourites */
   toggleFavoriteProduct: (productId: string) => void;

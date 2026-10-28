@@ -11,6 +11,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { PageHeader, Tabs } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { OrderStatusBadge, OrderTimeline, PaymentBadge } from "@/components/commerce/status";
+import { api } from "@/lib/api";
 import { useHirfa } from "@/lib/store";
 import { useLocale, useMyStore, useT } from "@/lib/store/hooks";
 import { nextStatus } from "@/lib/store/selectors";
@@ -62,6 +63,18 @@ export function SellerOrdersView() {
   const [payState, setPayState] = useState<PaymentState>("paid");
   const [paidAmount, setPaidAmount] = useState("");
   const [payMethod, setPayMethod] = useState("");
+
+  /** Emails the buyer whenever the seller moves an order along. */
+  function notifyBuyer(order: Order, status: string, note?: string) {
+    void api.notify({
+      type: "order_status",
+      buyerId: order.buyerId,
+      reference: order.reference,
+      storeName: store?.name ?? "",
+      status,
+      note,
+    });
+  }
 
   const storeOrders = useMemo(
     () =>
@@ -218,6 +231,7 @@ export function SellerOrdersView() {
                         <Button
                           onClick={() => {
                             setOrderStatus(order.id, next);
+                            notifyBuyer(order, next);
                             toast(t(`status.${next}`), "success");
                           }}
                         >
@@ -234,6 +248,7 @@ export function SellerOrdersView() {
                           variant="outline"
                           onClick={() => {
                             setOrderStatus(order.id, "completed");
+                            notifyBuyer(order, "completed");
                             toast(t("status.completed"), "success");
                           }}
                         >
@@ -317,7 +332,10 @@ export function SellerOrdersView() {
             </Button>
             <Button
               onClick={() => {
-                if (acceptFor) acceptOrder(acceptFor.id, readyAt || undefined);
+                if (acceptFor) {
+                  acceptOrder(acceptFor.id, readyAt || undefined);
+                  notifyBuyer(acceptFor, "confirmed");
+                }
                 setAcceptFor(null);
                 toast(t("status.confirmed"), "success");
               }}
@@ -356,7 +374,10 @@ export function SellerOrdersView() {
                   setRejectError(t("seller.rejectReasonRequired"));
                   return;
                 }
-                if (rejectFor) rejectOrder(rejectFor.id, rejectReason.trim());
+                if (rejectFor) {
+                  rejectOrder(rejectFor.id, rejectReason.trim());
+                  notifyBuyer(rejectFor, "rejected", rejectReason.trim());
+                }
                 setRejectFor(null);
                 toast(t("status.rejected"), "info");
               }}

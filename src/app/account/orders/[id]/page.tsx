@@ -23,7 +23,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const locale = useLocale();
   const toast = useToast();
 
-  const order = useHirfa((s) => s.orders.find((o) => o.id === id));
+  // An order is only readable by the buyer who placed it. Without this any
+  // signed-in visitor could open another buyer's address and phone number.
+  const order = useHirfa((s) => {
+    const found = s.orders.find((o) => o.id === id);
+    return found && found.buyerId === s.currentUserId ? found : undefined;
+  });
   const store = useHirfa((s) => s.stores.find((x) => x.id === order?.storeId));
   const existingReview = useHirfa((s) => s.reviews.find((r) => r.orderId === id));
   const cancelOrder = useHirfa((s) => s.cancelOrder);

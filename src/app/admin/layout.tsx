@@ -4,6 +4,7 @@ import {
   ClipboardList,
   FileClock,
   Flag,
+  Mail,
   LayoutDashboard,
   Store,
   UserCheck,
@@ -42,6 +43,7 @@ function AdminConsole({ children }: { children: React.ReactNode }) {
     { href: "/admin/orders", label: t("admin.orders"), icon: ClipboardList },
     { href: "/admin/users", label: t("admin.users"), icon: Users },
     { href: "/admin/reports", label: t("admin.reports"), icon: Flag, badge: openTickets },
+    { href: "/admin/emails", label: t("admin.outbox"), icon: Mail },
     { href: "/admin/audit", label: t("admin.audit"), icon: FileClock },
   ];
 

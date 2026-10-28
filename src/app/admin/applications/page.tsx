@@ -12,6 +12,7 @@ import { PageHeader, Tabs } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { townName } from "@/lib/data/towns";
 import { CATEGORY_BY_SLUG } from "@/lib/data/categories";
+import { api, type EmailOutcome } from "@/lib/api";
 import { useHirfa } from "@/lib/store";
 import { useLocale, useT } from "@/lib/store/hooks";
 import { formatDate } from "@/lib/format";
@@ -32,6 +33,12 @@ export default function AdminApplicationsPage() {
 
   const applications = useHirfa((s) => s.applications);
   const decide = useHirfa((s) => s.decideApplication);
+  const updateStore = useHirfa((s) => s.updateStore);
+  const [pending, setPending] = useState(false);
+  const [outcome, setOutcome] = useState<{
+    credentials?: { email: string; password: string };
+    email: EmailOutcome;
+  } | null>(null);
 
   const [tab, setTab] = useState<"pending" | "decided" | "all">("pending");
   const [decision, setDecision] = useState<{
@@ -40,6 +47,49 @@ export default function AdminApplicationsPage() {
   } | null>(null);
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
+
+  /**
+   * The server decides first.
+   *
+   * It is the only thing that creates the seller's account and records the
+   * decision email, so committing locally before it answers would leave an
+   * application marked accepted with a store nobody can sign in to manage —
+   * and the accept buttons only render while an application is undecided, so
+   * there would be no way to retry.
+   */
+  async function submitDecision(
+    application: SellerApplication,
+    status: ApplicationStatus,
+    decisionNote: string,
+  ) {
+    setPending(true);
+    const result = await api.decideApplication({
+      status: status as "accepted" | "rejected" | "needs_info",
+      note: decisionNote,
+      ownerName: application.ownerName,
+      projectName: application.projectName,
+      email: application.email,
+      phone: application.phone,
+      townId: application.townId,
+    });
+    setPending(false);
+
+    if (!result.ok) {
+      // The modal has already closed, so an inline field error would never be
+      // seen. Leave the application undecided so the buttons come back.
+      toast(result.error, "error");
+      return;
+    }
+
+    // decide() creates the store; updateStore() only patches an existing one,
+    // so the order matters.
+    decide(application.id, status, decisionNote);
+    if (result.data.ownerId) {
+      updateStore(`s-${application.id}`, { ownerId: result.data.ownerId });
+    }
+    setOutcome({ credentials: result.data.credentials, email: result.data.email });
+    toast(t(`applicationStatus.${status}`), "success");
+  }
 
   const buckets = useMemo(() => {
     const sorted = [...applications].sort((a, b) =>
@@ -235,16 +285,17 @@ export default function AdminApplicationsPage() {
             </Button>
             <Button
               variant={decision?.status === "rejected" ? "danger" : "primary"}
-              onClick={() => {
+              disabled={pending}
+              onClick={async () => {
                 if (!note.trim()) {
                   setError(t("admin.decisionNoteRequired"));
                   return;
                 }
-                if (decision) {
-                  decide(decision.application.id, decision.status, note.trim());
-                  toast(t(`applicationStatus.${decision.status}`), "success");
-                }
+                const active = decision;
                 setDecision(null);
+                if (active) {
+                  await submitDecision(active.application, active.status, note.trim());
+                }
               }}
             >
               {t("common.confirm")}
@@ -264,10 +315,65 @@ export default function AdminApplicationsPage() {
         </Field>
         {decision?.status === "accepted" && (
           <Notice tone="success" className="mt-4">
-            بعد القبول بينفتح متجر للبائعة، وبتحصل على صلاحية إدارة متجرها فقط.
+            بعد القبول بينفتح متجر للبائعة وبينشأ لها حساب دخول، وبتوصلها رسالة فيها
+            بيانات الدخول. صلاحيتها على متجرها فقط.
           </Notice>
         )}
       </Modal>
+
+      <Modal
+        open={Boolean(outcome)}
+        onClose={() => setOutcome(null)}
+        title={outcome?.credentials ? t("admin.userCreated") : t("admin.decisionNote")}
+        size="sm"
+        footer={<Button onClick={() => setOutcome(null)}>{t("common.close")}</Button>}
+      >
+        {outcome && (
+          <div className="space-y-4">
+            {outcome.credentials && (
+              <>
+                <dl className="space-y-2 border border-sand-300 bg-sand-100 p-4 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-sand-600">{t("account.email")}</dt>
+                    <dd className="font-semibold" dir="ltr">
+                      {outcome.credentials.email}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-sand-600">{t("admin.tempPassword")}</dt>
+                    <dd className="font-mono font-semibold" dir="ltr">
+                      {outcome.credentials.password}
+                    </dd>
+                  </div>
+                </dl>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(
+                      `${outcome.credentials!.email}\n${outcome.credentials!.password}`,
+                    );
+                    toast(t("store.linkCopied"), "success");
+                  }}
+                >
+                  {t("admin.copyCredentials")}
+                </Button>
+              </>
+            )}
+
+            {outcome.email.status === "sent" ? (
+              <Notice tone="success">{t("emailStatus.sent")}</Notice>
+            ) : outcome.email.status === "failed" ? (
+              <Notice tone="danger">
+                {t("emailStatus.failed")}: {outcome.email.error}
+              </Notice>
+            ) : (
+              <Notice tone="neutral">{t("email.noProvider")}</Notice>
+            )}
+          </div>
+        )}
+      </Modal>
+
     </div>
   );
 }

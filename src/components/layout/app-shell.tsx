@@ -6,6 +6,7 @@ import { LOCALE_META } from "@/lib/i18n/config";
 import { useHirfa } from "@/lib/store";
 import { useHydrated } from "@/lib/store/hooks";
 import { Toaster } from "@/components/ui/toast";
+import { SessionSync } from "./session-sync";
 import { SiteHeader } from "./site-header";
 import { SiteFooter } from "./site-footer";
 
@@ -29,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <SessionSync />
       <SiteHeader compact={isConsole} />
       <main className="flex-1">{children}</main>
       {!isConsole && <SiteFooter />}

@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Globe } from "lucide-react";
 import { LOCALES, LOCALE_META } from "@/lib/i18n/config";
+import { api } from "@/lib/api";
 import { useHirfa } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 export function LanguageSwitcher({ className }: { className?: string }) {
   const locale = useHirfa((s) => s.locale);
   const setLocale = useHirfa((s) => s.setLocale);
+  const signedIn = useHirfa((s) => s.currentUserId !== null);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -46,6 +48,8 @@ export function LanguageSwitcher({ className }: { className?: string }) {
                 aria-selected={code === locale}
                 onClick={() => {
                   setLocale(code);
+                  // Remember it on the account so it survives a new device.
+                  if (signedIn) void api.updateProfile({ locale: code });
                   setOpen(false);
                 }}
                 className={cn(

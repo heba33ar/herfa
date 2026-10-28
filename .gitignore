@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local JSON database (seeded from data/db.seed.json)
+/data/db.json
+
+# Next.js writes this itself
+AGENTS.md

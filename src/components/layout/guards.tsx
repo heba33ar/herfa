@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { LockKeyhole, ShieldAlert } from "lucide-react";
 import type { Role } from "@/lib/types";
+import { useHirfa } from "@/lib/store";
 import { useCurrentUser, useHydrated, useT } from "@/lib/store/hooks";
 import { EmptyState, Skeleton } from "@/components/ui/feedback";
 import { ButtonLink } from "@/components/ui/button";
@@ -21,9 +22,12 @@ export function LoadingBlock() {
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const t = useT();
   const hydrated = useHydrated();
+  const sessionChecked = useHirfa((s) => s.sessionChecked);
   const user = useCurrentUser();
 
-  if (!hydrated) return <LoadingBlock />;
+  // Wait for /api/auth/me as well as rehydration, or a signed-in visitor sees
+  // the "please log in" state flash before the session arrives.
+  if (!hydrated || !sessionChecked) return <LoadingBlock />;
 
   if (!user) {
     return (
@@ -57,9 +61,10 @@ export function RequireRole({
 }) {
   const t = useT();
   const hydrated = useHydrated();
+  const sessionChecked = useHirfa((s) => s.sessionChecked);
   const user = useCurrentUser();
 
-  if (!hydrated) return <LoadingBlock />;
+  if (!hydrated || !sessionChecked) return <LoadingBlock />;
 
   if (!user) {
     return <RequireAuth>{children}</RequireAuth>;

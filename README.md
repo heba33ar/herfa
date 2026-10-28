@@ -41,10 +41,17 @@ Pick one from the buttons on `/login`, or sign in with the password `hirfa2026`:
 |---|---|---|
 | Buyer | `buyer@hirfa.app` | `/account` — orders, favourites, reviews |
 | Seller | `seller@hirfa.app` | `/seller` — store, orders, finances |
-| Admin | `admin@hirfa.app` | `/admin` — applications, stores, reports |
+| Admin | `admin@hirfa.app` | `/admin` — applications, stores, reports, outbox |
 
 One account can hold several roles at once, as the PRD requires — the seller
-account is also a buyer.
+account is also a buyer, and the admin is too.
+
+The seed also holds an account for each of the other eleven storefronts
+(`noor@`, `fatima@`, `rania@`, … all `@hirfa.app`, same password), so every
+store has a real owner who can sign in and manage it.
+
+These are fixtures in a public repo, not secrets. Replace the lot before any
+real deployment.
 
 ## What is implemented
 
@@ -94,21 +101,69 @@ A few rules from the PRD are enforced in code rather than left to the UI:
 
 ## Data layer
 
-This build has **no backend**. The whole domain lives in a typed Zustand store
-(`src/lib/store/`) seeded from `src/lib/data/seed.ts` and persisted to
-localStorage, so every flow is genuinely interactive and survives a reload, but
-data is per-device and never leaves the browser. "Reset demo data" in the footer
-restores the seed.
+The app is **half server-backed**, and the split is deliberate.
 
-The shapes in `src/lib/types.ts` mirror the entity table in the PRD (Users,
-Sellers, Stores, Products, Orders, OrderItems, Payments, Expenses, Reviews,
-Announcements, DeliveryOffers, SupportTickets, AuditLogs), so moving to a real
-database means implementing those tables and swapping the store's actions for
-server calls — the components do not change.
+**Server-side** — accounts, sessions and the email outbox live in a single JSON
+document behind `src/lib/server/`. Passwords are scrypt hashes, sessions are
+httpOnly cookies, and every API route under `src/app/api/` reads and writes
+through one small `writeDb()` transaction helper.
 
-Still to be built for production: real authentication, a database, file uploads
-for seller photos, notifications (email/WhatsApp), and a payment integration if
-the commission model from the deck is adopted.
+Where that JSON document lives is chosen at runtime:
+
+| Driver | When | Writes survive |
+|---|---|---|
+| `file` | locally — `data/db.json`, seeded from the committed `data/db.seed.json` | yes |
+| `blob` | when `BLOB_READ_WRITE_TOKEN` is set — the same document in Vercel Blob | yes |
+| `memory` | last resort, when neither can be written | **no** |
+
+On Vercel the function filesystem is read-only, so without a Blob store the
+app demotes to `memory`: the fourteen seeded accounts work and every flow runs,
+but anything created in the demo is lost when the instance recycles. This is
+not silent — `/api/status` reports the active driver and the admin dashboard
+shows a warning. To make it durable:
+
+```bash
+vercel blob create-store herfa-db --access private --yes
+vercel env pull
+```
+
+**Client-side** — stores, products, orders, expenses, reviews, announcements
+and the delivery network remain in the Zustand store (`src/lib/store/`),
+persisted to localStorage per device. "Reset demo data" in the footer restores
+that half; it leaves accounts alone, because they are on the server.
+
+The shapes in `src/lib/types.ts` mirror the entity table in the PRD, so moving
+the remaining half to a real database means implementing those tables and
+swapping the store's actions for API calls — the components do not change.
+
+## Email
+
+Every message is written to an outbox in the database first, then transmitted
+only if a provider is configured. With no API key the app still works end to
+end and `/admin/emails` shows exactly what would have been sent — which is what
+makes it demoable before anyone signs up for anything.
+
+Six messages are wired to real events: a welcome on registration, an invite
+when an admin creates an account, a notice to the seller when an order arrives,
+a notice to the buyer on every status change, a notice to the admins when
+someone applies to sell, and the decision when that application is answered.
+
+To turn on real delivery, set `RESEND_API_KEY` (see `.env.example`). One
+caveat worth knowing before the demo: Resend's default `onboarding@resend.dev`
+sender only delivers to the Resend account owner's own address — reaching
+anyone else needs a verified domain. The outbox surfaces the provider's error
+verbatim, so this failure explains itself rather than looking like a bug.
+
+Temporary passwords are masked in the stored copy, so the outbox never becomes
+a readable password list.
+
+## Not built yet
+
+Real file uploads for seller photos, WhatsApp notifications, a payment
+integration, and the AI shopping assistant from the PRD's "advanced stage".
+Security work explicitly deferred for this POC: CSRF tokens, rate limiting,
+session rotation, and the password-less `/api/auth/demo` route that signs in
+the three demo accounts for the client walkthrough.
 
 ## Layout
 

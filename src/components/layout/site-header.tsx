@@ -20,8 +20,10 @@ import {
 import { Logo } from "./logo";
 import { LanguageSwitcher } from "./language-switcher";
 import { Button, ButtonLink } from "@/components/ui/button";
+import { api } from "@/lib/api";
 import { useHirfa } from "@/lib/store";
 import { useCartCount, useCurrentUser, useHydrated, useT } from "@/lib/store/hooks";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 export function SiteHeader({ compact = false }: { compact?: boolean }) {
@@ -31,7 +33,9 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
   const hydrated = useHydrated();
   const user = useCurrentUser();
   const cartCount = useCartCount();
-  const logout = useHirfa((s) => s.logout);
+  const toast = useToast();
+  const setSessionUser = useHirfa((s) => s.setSessionUser);
+  const sessionChecked = useHirfa((s) => s.sessionChecked);
 
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -145,7 +149,7 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
             )}
           </Link>
 
-          {!hydrated ? (
+          {!hydrated || !sessionChecked ? (
             <div className="h-10 w-24 animate-pulse rounded-md bg-sand-200" />
           ) : user ? (
             <div ref={userMenuRef} className="relative">
@@ -193,8 +197,16 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
                   <button
                     type="button"
                     role="menuitem"
-                    onClick={() => {
-                      logout();
+                    onClick={async () => {
+                      const result = await api.logout();
+                      if (!result.ok) {
+                        // Clearing the UI here would hide a cookie that is
+                        // still valid — the next visitor on this device would
+                        // be signed in as them.
+                        toast(t("common.error"), "error");
+                        return;
+                      }
+                      setSessionUser(null);
                       router.push("/");
                     }}
                     className="flex w-full items-center gap-2.5 rounded-xs px-3 py-2 text-sm text-danger-700 transition-colors hover:bg-danger-50"
